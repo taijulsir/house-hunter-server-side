@@ -2,6 +2,7 @@ const express = require("express")
 const cors = require("cors")
 require("dotenv").config()
 const jwt = require('jsonwebtoken')
+const bcrypt = require('bcrypt')
 const app = express()
 const port = process.env.PORT || 5000;
 
@@ -28,8 +29,10 @@ async function run() {
 
         const userCollection = client.db("houseHunterDB").collection('users')
 
-        // send token in client side
-        app.post('/jwt', async (req, res) => {
+
+
+        // API for jwt send token in client side
+        app.post('/api/jwt', async (req, res) => {
             try {
                 const user = req.body;
                 const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
@@ -43,11 +46,33 @@ async function run() {
             }
         })
 
-        
 
+        // API for get registered user data
 
-
-
+        app.post('/api/register',async(req,res)=>{
+            const user = req.body;
+            const email = user.email
+            const query = {email: email}
+            // check the duplicated users
+            const existingUser = await userCollection.findOne(query)
+            if(existingUser){
+              return  res.status(200).send({message: "User already exists", insertedId: null})
+            }
+            // hash the password
+            const hashedPassword = await bcrypt.hash(req.body.password,10);
+            
+            // save user to the database
+            const newUser = new ({
+                name: req.body.name,
+                role: req.body.role,
+                phoneNumber: req.body.phoneNumber,
+                email: req.body.email,
+                photoUrl : req.body.photoUrl,
+                password: hashedPassword
+            })
+            const result = await userCollection.insertOne(newUser)
+            res.send(result)
+        })
 
         // Send a ping to confirm a successful connection
         // await client.db("admin").command({ ping: 1 });
