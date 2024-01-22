@@ -30,7 +30,6 @@ async function run() {
         const userCollection = client.db("houseHunterDB").collection('users')
 
 
-
         // API for jwt send token in client side
         app.post('/api/jwt', async (req, res) => {
             try {
@@ -48,7 +47,6 @@ async function run() {
 
 
         // API for get registered user data
-
         app.post('/api/register',async(req,res)=>{
             const user = req.body;
             const email = user.email
@@ -72,6 +70,26 @@ async function run() {
             })
             const result = await userCollection.insertOne(newUser)
             res.send(result)
+        })
+
+        // Api for user login endpoint
+        app.post('/api/login',async(req,res)=>{
+            const {email,password} = req.body
+            const emailQuery = {email: email}
+            // verify email 
+            const user = await userCollection.findOne(emailQuery)
+            if(!user){
+              return  res.status(401).send({error: "Invalid Credentials"})
+            }
+            
+            // Verify password
+
+            const validPassword = await bcrypt.compare(password, user.password)
+            if(!validPassword){
+                return res.send(401).send({error: "Invalid Credentials"})
+            }
+            res.status(200).send({message : "Login ssuccesfull"})
+
         })
 
         // Send a ping to confirm a successful connection
