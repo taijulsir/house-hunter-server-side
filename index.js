@@ -31,44 +31,44 @@ async function run() {
 
 
         // middlewares for verify token
-        const verifyToken = async(req,res,next) =>{
-            try{
-                if(!req.headers.authorization){
-                    return res.status(401).json({message: "Unauthorized access"})
+        const verifyToken = async (req, res, next) => {
+            try {
+                if (!req.headers.authorization) {
+                    return res.status(401).json({ message: "Unauthorized access" })
                 }
                 const token = req.headers.authorization.split(' ')[1];
-                jwt.verify(token,process.env.ACCESS_TOKEN_SECRET,(err,decoded)=>{
-                   if(err){
-                    return res.status(401).json({message: "Unauthorized access"})
-                   } 
-                   req.decoded = decoded;
-                   next();
+                jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+                    if (err) {
+                        return res.status(401).json({ message: "Unauthorized access" })
+                    }
+                    req.decoded = decoded;
+                    next();
                 })
             }
-            catch(error){
+            catch (error) {
                 console.error("Error in verifyToken middleware", error)
-                return res.status(500).json({message: "Internal server error"})
+                return res.status(500).json({ message: "Internal server error" })
             }
         }
 
 
         // middlewares for check user role
-        const verifyAdmin = async(req,res,next) => {
-            try{
+        const verifyAdmin = async (req, res, next) => {
+            try {
                 const email = req.decoded.email;
-                const query = {email: email}
+                const query = { email: email }
                 const user = await userCollection.findOne(query)
                 const isAdmin = user?.role === 'admin';
-                if(isAdmin){
+                if (isAdmin) {
                     next();
                 }
-                else{
-                    return res.status(403).json({message:"Forbidden access"})
+                else {
+                    return res.status(403).json({ message: "Forbidden access" })
                 }
             }
-            catch(error){
-                console.log("Error occuered in verify admin",error)
-                res.status(500).json({message: "Internal server error"})
+            catch (error) {
+                console.log("Error occuered in verify admin", error)
+                res.status(500).json({ message: "Internal server error" })
             }
         }
 
@@ -87,23 +87,62 @@ async function run() {
             }
         })
 
+        // Check admin 
+        app.get('/users/checkRole/:email', verifyToken, async (req, res) => {
+            try {
+                const email = req.params.email;
+                if (email !== req.decoded.email) {
+                    return res.status(403).send({ message: "Forbidden Access" });
+                }
+                const query = { email: email };
+                const user = await userCollection.findOne(query);
+                let roleInfo = { admin: false };
+                if (user) {
+                    roleInfo.admin = user.role === 'admin';
+                }
+                res.send({ roleInfo });
+            } catch (error) {
+                console.error("Error in /users/checkRole/:email endpoint:", error);
+                res.status(500).send({ error: "Internal Server Error" });
+            }
+        });
+
+        app.get('/api/user/checkRole/:email', verifyToken, async (req, res) => {
+            try {
+                const email = req.params.email;
+                if (email !== req.decoded.email) {
+                    return res.status(403).json({ message: "Forbidden Access" })
+                }
+                const query = { email: email }
+                const user = await userCollection.findOne(query)
+                let role = { admin: false }
+                if (user) {
+                    role.admin = user?.role === 'admin'
+                }
+                res.send({ role })
+            }
+            catch (error) {
+                console.error("Error in checking user role", error)
+                res.status(500).json({ message: "Internal server error" })
+            }
+        })
+
 
         // API for get registered user data
         app.post('/api/register', async (req, res) => {
             const user = req.body;
             const email = user.email
             const query = { email: email }
-        
             try {
                 // Check for duplicated users
                 const existingUser = await userCollection.findOne(query);
                 if (existingUser) {
                     return res.status(200).json({ message: "User already exists", insertedId: null });
                 }
-        
+
                 // Hash the password
                 const hashedPassword = await bcrypt.hash(req.body.password, 10);
-        
+
                 // Save user to the database
                 const newUser = {
                     name: req.body.name,
@@ -113,10 +152,10 @@ async function run() {
                     photoUrl: req.body.photoUrl,
                     password: hashedPassword
                 };
-        
+
                 const result = await userCollection.insertOne(newUser);
                 const insertedId = result.insertedId;
-        
+
                 // Send response with the insertedId
                 res.json({ message: "User registered successfully", insertedId });
             } catch (error) {
@@ -124,45 +163,45 @@ async function run() {
                 res.status(500).json({ message: "Internal Server Error", insertedId: null });
             }
         });
-        
-        
-        // Api for user login endpoint
-        app.post('/api/login',async(req,res)=>{
-           try{
-            const {email,password} = req.body
-            const emailQuery = {email: email}
-            // verify email 
-            const user = await userCollection.findOne(emailQuery)
-            if(!user){
-              return  res.status(401).json({error: "Invalid Credentials"})
-            }
-            
-            // Verify password
 
-            const validPassword = await bcrypt.compare(password, user.password)
-            if(!validPassword){
-                return res.status(401).json({error: "Invalid Credentials"})
+
+        // Api for user login endpoint
+        app.post('/api/login', async (req, res) => {
+            try {
+                const { email, password } = req.body
+                const emailQuery = { email: email }
+                // verify email 
+                const user = await userCollection.findOne(emailQuery)
+                if (!user) {
+                    return res.status(401).json({ error: "Invalid Credentials" })
+                }
+
+                // Verify password
+
+                const validPassword = await bcrypt.compare(password, user.password)
+                if (!validPassword) {
+                    return res.status(401).json({ error: "Invalid Credentials" })
+                }
+                res.status(200).json({ message: "Login ssuccesfull" })
             }
-            res.status(200).json({message : "Login ssuccesfull"})
-           }
-           catch(error){
-            console.error("Error ocurred in login",error.message)
-            res.status(500).json({message: "Internal server error"})
-           }
+            catch (error) {
+                console.error("Error ocurred in login", error.message)
+                res.status(500).json({ message: "Internal server error" })
+            }
         })
 
 
         // API for get specific user data
-        app.get('/api/user/:email',async(req,res)=>{
-            try{
+        app.get('/api/user/:email', async (req, res) => {
+            try {
                 const email = req.params.email;
-                const query = {email: email}
+                const query = { email: email }
                 const result = await userCollection.findOne(query)
                 res.status(200).json(result)
             }
-            catch(error){
-                console.error("Error in find user",error.message)
-                res.status(500).json({error: "Internal server error"})
+            catch (error) {
+                console.error("Error in find user", error.message)
+                res.status(500).json({ error: "Internal server error" })
             }
         })
 
