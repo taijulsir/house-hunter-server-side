@@ -188,29 +188,43 @@ async function run() {
         })
 
         // Api for create new house
-        app.post('/api/createNewHouse',async(req,res)=>{
-            try{
+        app.post('/api/createNewHouse', async (req, res) => {
+            try {
                 const houseInfo = req.body;
                 const result = await houseCollection.insertOne(houseInfo)
                 res.status(200).json(result)
             }
-            catch(error){
-                console.error("Error occured in create new house",error)
-                res.status(500).json({message:"Internal server error"})
+            catch (error) {
+                console.error("Error occured in create new house", error)
+                res.status(500).json({ message: "Internal server error" })
             }
         })
 
         // Api for get all house
-        app.get("/api/houses",async(req,res)=>{
-            try{
+        app.get("/api/houses", async (req, res) => {
+            try {
                 const result = await houseCollection.find().toArray()
                 res.status(200).json(result)
             }
-            catch(error){
-                console.error("Error occured in get all houses",error)
-                res.status(500).json({message: "Internal server error"})
+            catch (error) {
+                console.error("Error occured in get all houses", error)
+                res.status(500).json({ message: "Internal server error" })
             }
         })
+        // APi for get house specific user
+        app.get("/api/house/user/:email", async (res, req) => {
+            try {
+                const email = req.params.email;
+                const query = { ownerEmail: email }
+                const result = await houseCollection.find(query).toArray()
+                res.status(200).json(result)
+            }
+            catch (error) {
+                console.error("Error occured in get all houses", error)
+                res.status(500).json({ message: "Internal server error" })
+            }
+        })
+        
 
         // Send a ping to confirm a successful connection
         // await client.db("admin").command({ ping: 1 });
