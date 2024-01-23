@@ -50,7 +50,27 @@ async function run() {
                 return res.status(500).json({message: "Internal server error"})
             }
         }
-        
+
+
+        // middlewares for check user role
+        const verifyAdmin = async(req,res,next) => {
+            try{
+                const email = req.decoded.email;
+                const query = {email: email}
+                const user = await userCollection.findOne(query)
+                const isAdmin = user?.role === 'admin';
+                if(isAdmin){
+                    next();
+                }
+                else{
+                    return res.status(403).json({message:"Forbidden access"})
+                }
+            }
+            catch(error){
+                console.log("Error occuered in verify admin",error)
+                res.status(500).json({message: "Internal server error"})
+            }
+        }
 
         // API for jwt send token in client side
         app.post('/api/jwt', async (req, res) => {
