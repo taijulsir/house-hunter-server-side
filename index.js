@@ -28,6 +28,7 @@ async function run() {
         // await client.connect();
 
         const userCollection = client.db("houseHunterDB").collection('users')
+        const houseCollection = client.db("houseHunterDB").collection('houses')
 
 
         // middlewares for verify token
@@ -51,15 +52,14 @@ async function run() {
             }
         }
 
-
         // middlewares for check user role
-        const verifyAdmin = async (req, res, next) => {
+        const verifyOwner = async (req, res, next) => {
             try {
                 const email = req.decoded.email;
                 const query = { email: email }
                 const user = await userCollection.findOne(query)
-                const isAdmin = user?.role === 'admin';
-                if (isAdmin) {
+                const isOwner = user?.role === 'owner';
+                if (isOwner) {
                     next();
                 }
                 else {
@@ -87,26 +87,7 @@ async function run() {
             }
         })
 
-        // Check admin 
-        app.get('/users/checkRole/:email', verifyToken, async (req, res) => {
-            try {
-                const email = req.params.email;
-                if (email !== req.decoded.email) {
-                    return res.status(403).send({ message: "Forbidden Access" });
-                }
-                const query = { email: email };
-                const user = await userCollection.findOne(query);
-                let roleInfo = { admin: false };
-                if (user) {
-                    roleInfo.admin = user.role === 'admin';
-                }
-                res.send({ roleInfo });
-            } catch (error) {
-                console.error("Error in /users/checkRole/:email endpoint:", error);
-                res.status(500).send({ error: "Internal Server Error" });
-            }
-        });
-
+        // Check admin    
         app.get('/api/user/checkRole/:email', verifyToken, async (req, res) => {
             try {
                 const email = req.params.email;
@@ -115,9 +96,13 @@ async function run() {
                 }
                 const query = { email: email }
                 const user = await userCollection.findOne(query)
-                let role = { admin: false }
+                let role = {
+                    owner: false,
+                    renter: false,
+                }
                 if (user) {
-                    role.admin = user?.role === 'admin'
+                    role.owner = user?.role === 'owner';
+                    role.renter = user?.role === 'renter'
                 }
                 res.send({ role })
             }
@@ -127,8 +112,7 @@ async function run() {
             }
         })
 
-
-        // API for get registered user data
+        // API for user register endpoint
         app.post('/api/register', async (req, res) => {
             const user = req.body;
             const email = user.email
@@ -164,7 +148,6 @@ async function run() {
             }
         });
 
-
         // Api for user login endpoint
         app.post('/api/login', async (req, res) => {
             try {
@@ -190,7 +173,6 @@ async function run() {
             }
         })
 
-
         // API for get specific user data
         app.get('/api/user/:email', async (req, res) => {
             try {
@@ -202,6 +184,31 @@ async function run() {
             catch (error) {
                 console.error("Error in find user", error.message)
                 res.status(500).json({ error: "Internal server error" })
+            }
+        })
+
+        // Api for create new house
+        app.post('/api/createNewHouse',async(req,res)=>{
+            try{
+                const houseInfo = req.body;
+                const result = await houseCollection.insertOne(houseInfo)
+                res.status(200).json(result)
+            }
+            catch(error){
+                console.error("Error occured in create new house",error)
+                res.status(500).json({message:"Internal server error"})
+            }
+        })
+
+        // Api for get all house
+        app.get("/api/houses",async(req,res)=>{
+            try{
+                const result = await houseCollection.find().toArray()
+                res.status(200).json(result)
+            }
+            catch(error){
+                console.error("Error occured in get all houses",error)
+                res.status(500).json({message: "Internal server error"})
             }
         })
 
