@@ -304,6 +304,18 @@ async function run() {
             }
         })
 
+        // Api for get booking houses
+        app.get("/api/bookHouse",async(req,res)=>{
+           try{
+            const result = await bookingHouseCollection.find().toArray()
+            res.status(200).json(result)
+           }
+           catch{
+            console.error("Error occured in get booking houses", error)
+            res.status(500).json({ message: "Internal server error" })
+           }
+        })
+
         // Send a ping to confirm a successful connection
         // await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
