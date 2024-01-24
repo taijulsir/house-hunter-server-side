@@ -305,9 +305,11 @@ async function run() {
         })
 
         // Api for get booking houses
-        app.get("/api/bookHouse",async(req,res)=>{
+        app.get("/api/bookHouse/:email",async(req,res)=>{
            try{
-            const result = await bookingHouseCollection.find().toArray()
+            const email = req.params.email;
+            const query = {renterEmail: email}
+            const result = await bookingHouseCollection.find(query).toArray()
             res.status(200).json(result)
            }
            catch{
