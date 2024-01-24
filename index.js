@@ -229,7 +229,7 @@ async function run() {
         app.get("/api/house/:id", async (res, req) => {
             try {
                 const id = req.params.id;
-                const query = {_id: new ObjectId(id)}
+                const query = { _id: new ObjectId(id) }
                 const result = await houseCollection.findOne(query)
                 res.status(200).json(result)
             }
@@ -240,16 +240,50 @@ async function run() {
         })
 
         // API for delete house
-        app.delete("/api/house/:id",async(res,req)=>{
-            try{
+        app.delete("/api/house/:id", async (res, req) => {
+            try {
                 const id = req.params.id;
-                const query = {_id: new ObjectId(id)}
+                const query = { _id: new ObjectId(id) }
                 const result = await houseCollection.deleteOne(query)
                 res.status(200).json(result)
             }
-            catch(error){
+            catch (error) {
                 console.error("Error occured in get all houses", error)
-                res.status(500).json({ message: "Internal server error" }) 
+                res.status(500).json({ message: "Internal server error" })
+            }
+        })
+
+        // APi for update a specific house
+        app.put("/api/updateHouse/:id", async (res, req) => {
+            try {
+                const houseInfo = req.body;
+                const id = req.params.id;
+                const query = {_id: new ObjectId(id)}
+                const options = { upsert: true};
+                const updatedHouse = {
+                    $set : {
+                        name: houseInfo.name,
+                        address: houseInfo.address,
+                        city: houseInfo.city,
+                        bedrooms: houseInfo.bedrooms,
+                        bathrooms: houseInfo.bathrooms,
+                        size: houseInfo.size,
+                        picture: houseInfo.housePicture,
+                        availabilityDate: houseInfo.date,
+                        rentPerMonth: houseInfo.rentPerMonth,
+                        phoneNumber: houseInfo.phoneNumber ,
+                        description: houseInfo.description,
+                        ownerEmail: houseInfo?.email,
+                        ownerName: houseInfo?.name,
+                        ownerImage: houseInfo?.photoUrl
+                    }           
+                }
+                const result = await houseCollection.updateOne(query,updatedHouse,options)
+                res.status(200).json(result)
+            }
+            catch {
+                console.error("Error occured in get all houses", error)
+                res.status(500).json({ message: "Internal server error" })
             }
         })
 
