@@ -29,6 +29,7 @@ async function run() {
 
         const userCollection = client.db("houseHunterDB").collection('users')
         const houseCollection = client.db("houseHunterDB").collection('houses')
+        const bookingHouseCollection = client.db("houseHunterDB").collection('bookingHouses')
 
 
         // middlewares for verify token
@@ -212,7 +213,7 @@ async function run() {
             }
         })
         // APi for get house specific user
-        app.get("/api/house/user/:email", async (res, req) => {
+        app.get("/api/house/user/:email", async (req, res) => {
             try {
                 const email = req.params.email;
                 const query = { ownerEmail: email }
@@ -226,7 +227,7 @@ async function run() {
         })
 
         // APi for get single house info
-        app.get("/api/house/:id", async (res, req) => {
+        app.get("/api/singleHouse/:id", async (req, res) => {
             try {
                 const id = req.params.id;
                 const query = { _id: new ObjectId(id) }
@@ -240,50 +241,66 @@ async function run() {
         })
 
         // API for delete house
-        app.delete("/api/house/:id", async (res, req) => {
+        app.delete("/api/deleteHouse/:id", async (req, res) => {
             try {
                 const id = req.params.id;
+                console.log(id)
                 const query = { _id: new ObjectId(id) }
+                console.log(query)
                 const result = await houseCollection.deleteOne(query)
+                console.log(result)
                 res.status(200).json(result)
             }
             catch (error) {
-                console.error("Error occured in get all houses", error)
+                console.error("Error occured in delete a houses", error)
                 res.status(500).json({ message: "Internal server error" })
             }
         })
 
         // APi for update a specific house
-        app.put("/api/updateHouse/:id", async (res, req) => {
+        app.put("/api/updateHouse/:id", async (req, res) => {
             try {
                 const houseInfo = req.body;
                 const id = req.params.id;
-                const query = {_id: new ObjectId(id)}
-                const options = { upsert: true};
+                const query = { _id: new ObjectId(id) }
+                const options = { upsert: true };
                 const updatedHouse = {
-                    $set : {
+                    $set: {
                         name: houseInfo.name,
                         address: houseInfo.address,
                         city: houseInfo.city,
                         bedrooms: houseInfo.bedrooms,
                         bathrooms: houseInfo.bathrooms,
                         size: houseInfo.size,
-                        picture: houseInfo.housePicture,
-                        availabilityDate: houseInfo.date,
+                        picture: houseInfo.picture,
+                        availabilityDate: houseInfo.availabilityDate,
                         rentPerMonth: houseInfo.rentPerMonth,
-                        phoneNumber: houseInfo.phoneNumber ,
+                        phoneNumber: houseInfo.phoneNumber,
                         description: houseInfo.description,
-                        ownerEmail: houseInfo?.email,
-                        ownerName: houseInfo?.name,
-                        ownerImage: houseInfo?.photoUrl
-                    }           
+                        ownerEmail: houseInfo.ownerEmail,
+                        ownerName: houseInfo.ownerName,
+                        ownerImage: houseInfo.ownerImage
+                    }
                 }
-                const result = await houseCollection.updateOne(query,updatedHouse,options)
+                const result = await houseCollection.updateOne(query, updatedHouse, options)
                 res.status(200).json(result)
             }
             catch {
                 console.error("Error occured in get all houses", error)
                 res.status(500).json({ message: "Internal server error" })
+            }
+        })
+
+        // Api for booking houses
+        app.post("/api/bookHouse", async (req, res) => {
+            try {
+                const bookHouse = req.body;
+                const result = await bookingHouseCollection.insertOne(bookHouse)
+                res.status(200).json(result)
+            }
+            catch{
+                console.error("Error occured in create booking houses", error)
+                res.status(500).json({ message: "Internal server error" })     
             }
         })
 
