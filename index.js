@@ -239,6 +239,20 @@ async function run() {
             }
         })
 
+        // API for delete house
+        app.delete("/api/house/:id",async(res,req)=>{
+            try{
+                const id = req.params.id;
+                const query = {_id: new ObjectId(id)}
+                const result = await houseCollection.deleteOne(query)
+                res.status(200).json(result)
+            }
+            catch(error){
+                console.error("Error occured in get all houses", error)
+                res.status(500).json({ message: "Internal server error" }) 
+            }
+        })
+
         // Send a ping to confirm a successful connection
         // await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
